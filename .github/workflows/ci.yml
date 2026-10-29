@@ -29,5 +29,5 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements-dev.txt
-      - run: pytest -q
+            - run: python -m pytest -q
       - run: docker build -t gamepulse:${{ github.sha }} .
