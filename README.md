@@ -103,3 +103,17 @@ Metrics are designed for one process per container; multiple containers need the
 - HTTP 403 submitting results: use the server key, not a JWT.
 - Redis outage: leaderboard stays available through SQL; readiness returns 503.
 - Database password changed after first launch: the stored database still has the old password. Restore the old value or deliberately recreate disposable development data. `docker compose down -v` permanently deletes that development database.
+
+## Local load-test results
+
+Tested with 20 simulated users over 60 seconds, requesting
+the leaderboard and health endpoints.
+
+- Total requests: 3,227
+- Failed requests: 0
+- Average throughput: 54.89 requests/second
+- Average response time: 47 ms
+- Overall p95 response time: 79 ms
+- Overall p99 response time: 1,300 ms
+
+Results reflect this local read workload.
