@@ -1,0 +1,49 @@
+x-app-env: &app-env
+  DATABASE_URL: postgresql+psycopg://gamepulse:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/gamepulse
+  REDIS_URL: redis://redis:6379/0
+  JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+  GAME_SERVER_KEY: ${GAME_SERVER_KEY:?Set GAME_SERVER_KEY in .env}
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: gamepulse
+      POSTGRES_DB: gamepulse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gamepulse"]
+      interval: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+  init:
+    build: .
+    environment: *app-env
+    command: ["python", "-m", "app.init_db"]
+    depends_on:
+      db:
+        condition: service_healthy
+  api:
+    build: .
+    environment: *app-env
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+volumes:
+  postgres_data:

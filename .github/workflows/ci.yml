@@ -1,0 +1,33 @@
+name: Test and build
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: gamepulse
+          POSTGRES_PASSWORD: testing-only
+          POSTGRES_DB: gamepulse
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U gamepulse" --health-interval 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    env:
+      DATABASE_URL: postgresql+psycopg://gamepulse:testing-only@localhost:5432/gamepulse
+      REDIS_URL: redis://localhost:6379/15
+      JWT_SECRET: testing-only-secret-32-characters-long
+      GAME_SERVER_KEY: testing-only-server-32-characters-long
+      REAL_SERVICES: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q
+      - run: docker build -t gamepulse:${{ github.sha }} .
